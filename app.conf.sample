@@ -1,0 +1,7 @@
+dbHost=127.0.0.1
+dbUser=tvguide_user
+dbPass=password123
+dbTable=tvguide
+dbName=tvguide
+fetchDays=2
+fetchModus=js.gz

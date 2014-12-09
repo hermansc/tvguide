@@ -1,0 +1,4 @@
+app.conf
+fetch_src/venv/
+*.swp
+*.pyc

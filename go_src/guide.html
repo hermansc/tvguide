@@ -1,0 +1,103 @@
+<html>
+  <head>
+    <title>TV-guide for Herman Schistad (Norwegian channels)</title>
+    <meta http-equiv="refresh" content="120">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <script>
+      function display_description(elem){
+        var desc_elem = elem.parentNode.childNodes[3];
+        if (desc_elem.style.display == 'inline') {
+          desc_elem.style.display = "none";
+        } else {
+          desc_elem.style.display = "inline";
+        }
+      }
+    </script>
+    <style>
+      html,body {
+        max-width:340px;
+        margin-left:10px;
+        margin-right:10px;
+        margin-bottom: 10px;
+      }
+      .title {
+        margin-top: 5px;
+        cursor: pointer;
+      }
+      .event {
+        margin: 0px 5px 0px 5px;
+
+      }
+      .channel {
+        width: 100%;
+        float: left;
+        border: 1px solid #ddd;
+        margin-top: 10px;
+      }
+      .channel h3 {
+        background-color: #ddd;
+        margin: 0px;
+      }
+      h1 {
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+  <h1>TV-schedule</h1>
+  <form action="." type="get">
+    <table style="margin: 0px auto">
+      <tr>
+        <td><b>Time zone:</b></td>
+        <td>
+          <select name="zone">
+            <option value="GMT">GMT</option>
+            <option value="CET">CET (UTC+01)</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td><b>Events</b></td>
+        <td>
+          <select name="num">
+            <option value="3">3</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" style="text-align: center"><input type="submit" value="Submit"/></td>
+      </tr>
+    </table>
+  </form>
+
+  <div style="text-align:center">
+    Current time in {{.TimeZone}}:</br>
+    {{.CurrentTime}}
+  </div>
+
+
+  {{ $channels := .Channels }}
+  {{ range $title, $channel := $channels }}
+    <div class="channel">
+      <h3>{{ $title }}</h3>
+      {{ range $index, $event := $channel }}
+        <div class="event">
+          <div class="title" onclick="display_description(this)">
+            {{ if not $index }}<b>{{ end }}
+            {{ $event.Start }} - {{ $event.Stop }}: {{ $event.Title }}<br />
+            {{ if not $index }}</b>{{ end }}
+          </div>
+          <div class="description" style="display:none">
+            <i>{{ $event.Description }}</i>
+          </div>
+        </div>
+      {{ end }}
+    </div>
+  {{ end }}
+  </body>
+</html>
