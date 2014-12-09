@@ -1,4 +1,6 @@
 app.conf
 fetch_src/venv/
+go_src/src
+go_src/tvguide
 *.swp
 *.pyc
