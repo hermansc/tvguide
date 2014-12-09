@@ -92,7 +92,7 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
                          FROM (
                           SELECT start, stop, title, channel, description, rank() OVER (PARTITION BY channel ORDER BY stop)
                           FROM tvguide
-                          WHERE stop > now()
+                          WHERE stop > now() AT TIME ZONE 'GMT'
                         ) as sq
                         WHERE sq.rank <= $1 ORDER BY channel`, num_events)
   if err != nil {
