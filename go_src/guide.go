@@ -84,11 +84,9 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
   rows, err := db.Query(`SELECT start, stop, title, channel, description
                          FROM (
                            SELECT 
-                                  start::TIMESTAMP WITH TIME ZONE AT TIME ZONE 'GMT' AS start, 
-                                  stop::TIMESTAMP WITH TIME ZONE AT TIME ZONE 'GMT' AS stop,
-                                  title, channel, description, rank() OVER (PARTITION BY channel ORDER BY stop)
+                                  start, stop, title, channel, description, rank() OVER (PARTITION BY channel ORDER BY stop)
                           FROM tvguide
-                          WHERE stop > now() AT TIME ZONE 'GMT'
+                          WHERE stop::TIMESTAMP WITH TIME ZONE AT TIME ZONE 'GMT' > now() AT TIME ZONE 'GMT'
                         ) as sq
                         WHERE sq.rank <= $1 ORDER BY channel`, num_events)
   if err != nil {
