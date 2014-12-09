@@ -12,6 +12,7 @@ import (
   "log"
   "io/ioutil"
   "strings"
+  "regexp"
   _ "github.com/lib/pq"
 )
 
@@ -20,6 +21,9 @@ type Event struct {
   Stop string
   Title string
   Description string
+
+  // Extra CSS classes
+  Class string
 }
 
 func add_to_channel(channel []interface{}, event Event, max int) []interface{} {
@@ -27,6 +31,47 @@ func add_to_channel(channel []interface{}, event Event, max int) []interface{} {
     return channel
   }
   return append(channel, event)
+}
+
+func get_fav_class(regexes []*regexp.Regexp, title string) string {
+  for _, regex := range regexes {
+    if(regex.MatchString(title)){
+      return "favorite"
+    }
+  }
+  return ""
+}
+
+func get_regexes(db *sql.DB) ([]*regexp.Regexp, error) {
+  // Create empty array of regexes
+  regexes := make([]*regexp.Regexp, 0)
+
+  rows, err := db.Query("SELECT regex FROM tvguide_favorites")
+  if err != nil {
+    return nil, err
+  }
+
+  defer rows.Close()
+  for rows.Next() {
+    var regex string
+    rows.Scan(&regex)
+
+    // Compile regexp, ignore if fails.
+    rx, err := regexp.Compile(regex)
+    if err != nil {
+      fmt.Println(fmt.Sprintf("Warning: Could not compile: '%s'", regex))
+      continue
+    }
+
+    // Append on success.
+    regexes = append(regexes, rx)
+  }
+  return regexes, nil
+}
+
+func noOpHandler(w http.ResponseWriter, r *http.Request) {
+  /* Do nothing on e.g. favicon */
+  return
 }
 
 func handler(w http.ResponseWriter, r *http.Request, config map[string]string, db *sql.DB) {
@@ -38,10 +83,18 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
 
   channels := make(map[string][]interface{})
 
+  num_events, err := strconv.ParseInt(r.FormValue("num"), 10, 0)
+  if err != nil || num_events == 0 {
+    num_events = 3
+  }
+
   rows, err := db.Query(`SELECT start, stop, title, channel, description
-                         FROM tvguide
-                         WHERE stop > now() AT TIME ZONE 'GMT'
-                         ORDER BY channel, start`)
+                         FROM (
+                          SELECT start, stop, title, channel, description, rank() OVER (PARTITION BY channel ORDER BY stop)
+                          FROM tvguide
+                          WHERE stop > now()
+                        ) as sq
+                        WHERE sq.rank <= $1 ORDER BY channel`, num_events)
   if err != nil {
     internal_error_handler(w, r, err)
     return
@@ -49,10 +102,6 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
 
   tlayout := "15:04"
   llayout := "2006-01-02 15:04:05 -0700"
-  num_events, err := strconv.ParseInt(r.FormValue("num"), 10, 0)
-  if err != nil || num_events == 0 {
-    num_events = 3
-  }
 
   tzone := r.FormValue("zone")
   if tzone == "" {
@@ -63,23 +112,34 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
     loc, _ = time.LoadLocation("GMT")
   }
 
+  // Get regexes to check titles for favorites
+  regexes, err := get_regexes(db)
+  if err != nil {
+    internal_error_handler(w, r, err)
+    return
+  }
+
   defer rows.Close()
   for rows.Next() {
     var start, stop time.Time
     var title, channel, description string
     if err := rows.Scan(&start,&stop,&title,&channel,&description); err != nil {
       internal_error_handler(w, r, err)
+      return
     }
 
     if description == "" {
       description = "(none)"
     }
 
+    extra_classes := get_fav_class(regexes, title)
+
     channels[channel] = add_to_channel(channels[channel], Event{
       Start: start.In(loc).Format(tlayout),
       Stop: stop.In(loc).Format(tlayout),
       Title: title,
       Description: description,
+      Class: extra_classes,
     }, int(num_events))
   }
 
@@ -156,6 +216,8 @@ func main() {
     log.Fatal("Could not open DB: " + err.Error())
   }
 
+  http.HandleFunc("/favicon.ico", noOpHandler)
+  http.HandleFunc("/favicon.png", noOpHandler)
   http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { handler(w, r, config, conn) })
   http.ListenAndServe(":12300", nil)
 }

@@ -3,6 +3,7 @@
     <title>TV-guide for Herman Schistad (Norwegian channels)</title>
     <meta http-equiv="refresh" content="120">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="shortcut icon" href="favicon.png">
     <script>
       function display_description(elem){
         var desc_elem = elem.parentNode.childNodes[3];
@@ -40,6 +41,9 @@
       }
       h1 {
         text-align: center;
+      }
+      .favorite {
+        color: red;
       }
     </style>
   </head>
@@ -89,7 +93,7 @@
         <div class="event">
           <div class="title" onclick="display_description(this)">
             {{ if not $index }}<b>{{ end }}
-            {{ $event.Start }} - {{ $event.Stop }}: {{ $event.Title }}<br />
+            {{ $event.Start }} - {{ $event.Stop }}: <span class="{{ $event.Class }}">{{ $event.Title }}</span><br />
             {{ if not $index }}</b>{{ end }}
           </div>
           <div class="description" style="display:none">
