@@ -84,7 +84,7 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
   rows, err := db.Query(`SELECT start, stop, title, channel, description
                          FROM (
                            SELECT 
-                                  start, stop, title, channel, description, rank() OVER (PARTITION BY channel ORDER BY stop)
+                           start::TIMESTAMP WITH TIME ZONE, stop::TIMESTAMP WITH TIME ZONE, title, channel, description, rank() OVER (PARTITION BY channel ORDER BY stop)
                           FROM tvguide
                           WHERE stop::TIMESTAMP WITH TIME ZONE AT TIME ZONE 'GMT' > now() AT TIME ZONE 'GMT'
                         ) as sq
