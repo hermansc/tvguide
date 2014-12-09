@@ -26,13 +26,6 @@ type Event struct {
   Class string
 }
 
-func add_to_channel(channel []interface{}, event Event, max int) []interface{} {
-  if (len(channel) >= max) {
-    return channel
-  }
-  return append(channel, event)
-}
-
 func get_fav_class(regexes []*regexp.Regexp, title string) string {
   for _, regex := range regexes {
     if(regex.MatchString(title)){
@@ -90,7 +83,10 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
 
   rows, err := db.Query(`SELECT start, stop, title, channel, description
                          FROM (
-                          SELECT start, stop, title, channel, description, rank() OVER (PARTITION BY channel ORDER BY stop)
+                           SELECT 
+                                  start::TIMESTAMP WITH TIME ZONE AT TIME ZONE 'GMT' AS start, 
+                                  stop::TIMESTAMP WITH TIME ZONE AT TIME ZONE 'GMT' AS stop,
+                                  title, channel, description, rank() OVER (PARTITION BY channel ORDER BY stop)
                           FROM tvguide
                           WHERE stop > now() AT TIME ZONE 'GMT'
                         ) as sq
@@ -134,13 +130,13 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
 
     extra_classes := get_fav_class(regexes, title)
 
-    channels[channel] = add_to_channel(channels[channel], Event{
+    channels[channel] = append(channels[channel], Event{
       Start: start.In(loc).Format(tlayout),
       Stop: stop.In(loc).Format(tlayout),
       Title: title,
       Description: description,
       Class: extra_classes,
-    }, int(num_events))
+    })
   }
 
   params := make(map[string]interface{})
