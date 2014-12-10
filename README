@@ -1,9 +1,37 @@
 # TV-guide project
 
-A TV-guide fetcher and presenter for Norwegian channels.
+A TV-guide fetcher and presenter for Norwegian channels. Made for personal use.
+
+## Where?
+
+It's live and running in http://tv.schistad.info
 
 ## Building
 
     $ cd go_src
+    $ export GOPATH=$PWD
     $ go get
     $ go build -o tvguide
+
+## Setup DB
+
+    $ createdb tvguide
+    $ createuser -P tvguide_user
+    $ psql -d tvguide -f fetch_src/db.sql tvguide_user
+
+## Fetching epg
+
+    # Setup
+    $ cd fetch_src
+    $ virtualenv venv
+    $ source venv/bin/activate
+    $ pip install -r requirements.txt
+
+    # Fetch (requires app.conf to be setup)
+    $ python epgfetch.py
+
+# Managing favorites
+
+    $ fav_cli.sh insert 'my.*showname'
+    $ fav_cli.sh select 'showname'
+    $ fav_cli.sh delete 2
