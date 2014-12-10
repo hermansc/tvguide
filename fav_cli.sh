@@ -27,7 +27,7 @@ if [ "$CMD" = "insert" ]; then
 elif [ "$CMD" = "delete" ]; then
   Q="DELETE FROM tvguide_favorites WHERE id='$2'";
 elif [ "$CMD" = "select" ]; then
-  Q="SELECT * FROM tvguide_favorites WHERE regex='$2'"
+  Q="SELECT * FROM tvguide_favorites WHERE regex ILIKE '%$2%'"
 else
   usage;
   exit 2;
