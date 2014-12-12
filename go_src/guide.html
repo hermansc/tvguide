@@ -84,6 +84,9 @@
     {{.CurrentTime}}
   </div>
 
+  {{ if not .Channels }}
+    <b>No programmes found.</b> Something wrong with epg-fetching?
+  {{ end }}
 
   {{ $channels := .Channels }}
   {{ range $title, $channel := $channels }}
