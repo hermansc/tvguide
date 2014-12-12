@@ -62,7 +62,7 @@ def parse_transmission_to_gmt(t):
 
 def run(config):
     BASE_URL="http://atlas.metabroadcast.com/3.0"
-    FREEVIEW_KEY="cbhn"
+    FREEVIEW_KEY="cbhh"
     API_KEY=config["apiKey"]
 
     # Connect to DB.
