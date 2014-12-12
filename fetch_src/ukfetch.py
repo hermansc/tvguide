@@ -9,9 +9,9 @@ import time
 import pytz
 
 VALID_CHANNELS = (
-    'BBC One London',
+    'BBC One East Midlands',
     'BBC Two England',
-    'ITV London',
+    'ITV Central',
     'Channel 4',
     'Channel 5',
     'ITV2'
