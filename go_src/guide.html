@@ -88,6 +88,15 @@
     <b>No programmes found.</b> Something wrong with epg-fetching?
   {{ end }}
 
+  {{ if .Upcoming }}
+    <h4 style="text-align:center">Upcoming favorites: </h4>
+    <ul>
+      {{ range .Upcoming }}
+      <li>{{ .Start }} - {{ .Title }} ({{ .Channel }})</li>
+      {{ end }}
+    </ul>
+  {{ end }}
+
   {{ $channels := .Channels }}
   {{ range $title, $channel := $channels }}
     <div class="channel">

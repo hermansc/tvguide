@@ -26,13 +26,13 @@ type Event struct {
   Class string
 }
 
-func get_fav_class(regexes []*regexp.Regexp, title string) string {
+func is_fav(regexes []*regexp.Regexp, title string) bool {
   for _, regex := range regexes {
     if(regex.MatchString(title)){
-      return "favorite"
+      return true
     }
   }
-  return ""
+  return false
 }
 
 func get_regexes(db *sql.DB) ([]*regexp.Regexp, error) {
@@ -75,6 +75,7 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
   }
 
   channels := make(map[string][]interface{})
+  upcoming := []map[string]string{}
 
   num_events, err := strconv.ParseInt(r.FormValue("num"), 10, 0)
   if err != nil || num_events == 0 {
@@ -126,11 +127,22 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
       description = "(none)"
     }
 
-    extra_classes := get_fav_class(regexes, title)
+    start_string := start.In(loc).Format(tlayout)
+    stop_string := stop.In(loc).Format(tlayout)
+
+    extra_classes := ""
+    if (is_fav(regexes, title)) {
+      extra_classes = "favorite"
+      upcoming = append(upcoming, map[string]string{
+        "Title": title,
+        "Start": start_string,
+        "Channel": channel,
+      })
+    }
 
     channels[channel] = append(channels[channel], Event{
-      Start: start.In(loc).Format(tlayout),
-      Stop: stop.In(loc).Format(tlayout),
+      Start: start_string,
+      Stop: stop_string,
       Title: title,
       Description: description,
       Class: extra_classes,
@@ -141,6 +153,7 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
   params["TimeZone"] = tzone
   params["CurrentTime"] = time.Now().In(loc).Format(llayout)
   params["Channels"] = channels
+  params["Upcoming"] = upcoming
 
   if err := rows.Err(); err != nil {
     internal_error_handler(w, r, err)
