@@ -62,6 +62,10 @@ func get_regexes(db *sql.DB) ([]*regexp.Regexp, error) {
   return regexes, nil
 }
 
+func isRunning(start,stop time.Time, loc *time.Location) bool {
+  return time.Now().In(loc).Before(stop) && time.Now().In(loc).After(start)
+}
+
 func noOpHandler(w http.ResponseWriter, r *http.Request) {
   /* Do nothing on e.g. favicon */
   return
@@ -127,8 +131,17 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
       description = "(none)"
     }
 
-    start_string := start.In(loc).Format(tlayout)
-    stop_string := stop.In(loc).Format(tlayout)
+    // Ensure GMT/correct zone
+    start = start.In(loc)
+    stop = stop.In(loc)
+
+    start_string := start.Format(tlayout)
+    stop_string := stop.Format(tlayout)
+
+    run_str := ""
+    if (isRunning(start,stop,loc)){
+      run_str = "running"
+    }
 
     extra_classes := ""
     if (is_fav(regexes, title)) {
@@ -136,7 +149,9 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
       upcoming = append(upcoming, map[string]string{
         "Title": title,
         "Start": start_string,
+        "Stop": stop_string,
         "Channel": channel,
+        "Running": run_str,
       })
     }
 
@@ -226,5 +241,9 @@ func main() {
   http.HandleFunc("/favicon.ico", noOpHandler)
   http.HandleFunc("/favicon.png", noOpHandler)
   http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { handler(w, r, config, conn) })
-  http.ListenAndServe(":12300", nil)
+
+  err = http.ListenAndServe(":12300", nil)
+  if err != nil {
+    log.Fatal("Could not listen to port 12300/start server")
+  }
 }

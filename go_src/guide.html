@@ -45,6 +45,9 @@
       .favorite {
         color: red;
       }
+      .running {
+        font-style: italic;
+      }
     </style>
   </head>
   <body>
@@ -92,7 +95,7 @@
     <h4 style="text-align:center">Upcoming favorites: </h4>
     <ul>
       {{ range .Upcoming }}
-      <li>{{ .Start }} - {{ .Title }} ({{ .Channel }})</li>
+      <li class="{{ .Running }}">{{ .Start }}-{{.Stop}} {{ .Title }} ({{ .Channel }})</li>
       {{ end }}
     </ul>
   {{ end }}
