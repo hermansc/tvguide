@@ -93,7 +93,7 @@
   {{ end }}
 
   {{ if .Upcoming }}
-    <h4 style="text-align:center">Upcoming favorites: </h4>
+    <h4 style="text-align:center">Upcoming/Current favorites: </h4>
     <ul>
       {{ range .Upcoming }}
       <li class="{{ .Running }}">{{ .Start }}-{{.Stop}} {{ .Title }} ({{ .Channel }})</li>
