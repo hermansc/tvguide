@@ -6,6 +6,7 @@ import sys
 import os
 import psycopg2
 import time
+import pytz
 
 VALID_CHANNELS = (
     'BBC One London',
@@ -52,6 +53,12 @@ def execute_db_insert(cur, programmes, channel_name):
     args_str = ",".join(cur.mogrify("(%s,%s,%s,%s,%s)", x) for x in insert_vals)
     cur.execute("INSERT INTO " + config["dbTable"] + "(start,stop,title,channel,description) VALUES" + args_str)
     print "Inserted %d events to %s" % (len(programmes), channel_name)
+
+def parse_transmission_to_gmt(t):
+    # Input format: 2014-12-11T23:35:00Z
+    # Output: datetime object with tzinfo set to GMT
+    p = pytz.utc.localize(datetime.strptime(t, "%Y-%m-%dT%H:%M:%SZ"))
+    return p
 
 def run(config):
     BASE_URL="http://atlas.metabroadcast.com/3.0"
@@ -126,8 +133,8 @@ def run(config):
 
             description = item.get("description", "")
             for broadcast in broadcasts:
-                programmes.extend([{'start': broadcast["transmission_time"],
-                                   'stop': broadcast["transmission_end_time"],
+                programmes.extend([{'start': parse_transmission_to_gmt(broadcast["transmission_time"]),
+                                   'stop': parse_transmission_to_gmt(broadcast["transmission_end_time"]),
                                    'title': title.strip(),
                                    'description': description.strip()}])
         execute_db_insert(db_cur,programmes,channel_name)
