@@ -4,6 +4,7 @@
     <meta http-equiv="refresh" content="120">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <link rel="shortcut icon" href="favicon.png">
+    <script src="static/isotope.pkgd.min.js"></script>
     <script>
       function display_description(elem){
         var desc_elem = elem.parentNode.childNodes[3];
@@ -13,13 +14,24 @@
           desc_elem.style.display = "inline";
         }
       }
+
+      window.onload = function(){
+        var container = document.getElementById('channels');
+        var iso = new Isotope(container, {
+            // options
+            itemSelector: '.channel',
+            layoutMode: 'masonry',
+            masonry: {
+              gutter: 10
+            }
+        });
+      }
     </script>
     <style>
       html,body {
-        max-width:340px;
-        margin-left:10px;
-        margin-right:10px;
+        max-width:800px;
         margin-bottom: 10px;
+        margin: 0 auto;
       }
       .title {
         margin-top: 5px;
@@ -27,11 +39,13 @@
       }
       .event {
         margin: 0px 5px 0px 5px;
-
+      }
+      #channels {
+        margin-left:10px;
       }
       .channel {
-        width: 100%;
-        float: left;
+        width: 30%;
+/*         float: left; */
         border: 1px solid #ddd;
         margin-top: 10px;
       }
@@ -48,6 +62,19 @@
       .running {
         color: blue;
         font-weight: bold;
+      }
+      @media all and (max-width: 800px) {
+        .channel {
+          width: 48%;
+        }
+      }
+      @media all and (max-width: 400px) {
+        .channel {
+          width: 98%;
+        }
+        #channels{
+          margin-left: 5px;
+        }
       }
     </style>
   </head>
@@ -101,6 +128,7 @@
     </ul>
   {{ end }}
 
+  <div id="channels">
   {{ $channels := .Channels }}
   {{ range $title, $channel := $channels }}
     <div class="channel">
@@ -119,5 +147,6 @@
       {{ end }}
     </div>
   {{ end }}
+  </div>
   </body>
 </html>
