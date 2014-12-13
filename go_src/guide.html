@@ -6,6 +6,8 @@
     <link rel="shortcut icon" href="favicon.png">
     <script src="static/isotope.pkgd.min.js"></script>
     <script>
+      var iso;
+
       function display_description(elem){
         var desc_elem = elem.parentNode.childNodes[3];
         if (desc_elem.style.display == 'inline') {
@@ -13,11 +15,12 @@
         } else {
           desc_elem.style.display = "inline";
         }
+        iso.layout();
       }
 
       window.onload = function(){
         var container = document.getElementById('channels');
-        var iso = new Isotope(container, {
+        iso = new Isotope(container, {
             // options
             itemSelector: '.channel',
             layoutMode: 'masonry',
