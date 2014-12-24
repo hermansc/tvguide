@@ -7,5 +7,6 @@ CREATE TABLE tvguide (
 );
 CREATE TABLE tvguide_favorites (
   id SERIAL PRIMARY KEY,
-  regex varchar(80) NOT NULL
+  regex varchar(80) NOT NULL,
+  channel_regex varchar(80)
 );

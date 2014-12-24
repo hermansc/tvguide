@@ -15,15 +15,21 @@ do
 done < app.conf
 
 # Parse command line
-if [ $# -ne 2 ]; then
+if [ $# -lt 2 ]; then
   usage;
   exit 2;
+fi
+
+# Check if we define channel regex
+CREGEX=".*"
+if [ -n $3 ]; then
+  CREGEX=$3;
 fi
 
 # Get command
 CMD=$1
 if [ "$CMD" = "insert" ]; then
-  Q="INSERT INTO tvguide_favorites(regex) VALUES('$2')"
+  Q="INSERT INTO tvguide_favorites(regex, channel_regex) VALUES('$2', '$CREGEX')"
 elif [ "$CMD" = "delete" ]; then
   Q="DELETE FROM tvguide_favorites WHERE id='$2'";
 elif [ "$CMD" = "select" ]; then

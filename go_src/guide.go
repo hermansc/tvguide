@@ -26,38 +26,53 @@ type Event struct {
   Class string
 }
 
-func is_fav(regexes []*regexp.Regexp, title string) bool {
+func is_fav(regexes [][]*regexp.Regexp, title, channel string) bool {
   for _, regex := range regexes {
-    if(regex.MatchString(title)){
-      return true
+    title_rx := regex[0]
+    channel_rx := regex[1]
+    if(title_rx.MatchString(title)){
+      if(channel_rx.MatchString(channel)){
+        return true
+      }
     }
   }
   return false
 }
 
-func get_regexes(db *sql.DB) ([]*regexp.Regexp, error) {
+func get_regexes(db *sql.DB) ([][]*regexp.Regexp, error) {
   // Create empty array of regexes
-  regexes := make([]*regexp.Regexp, 0)
+  regexes := make([][]*regexp.Regexp, 0)
 
-  rows, err := db.Query("SELECT regex FROM tvguide_favorites")
+  rows, err := db.Query("SELECT regex, channel_regex FROM tvguide_favorites")
   if err != nil {
     return nil, err
   }
 
   defer rows.Close()
   for rows.Next() {
-    var regex string
-    rows.Scan(&regex)
+    var title_regex, channel_regex string
+    rows.Scan(&title_regex, &channel_regex)
 
     // Compile regexp, ignore if fails.
-    rx, err := regexp.Compile(regex)
+    title_rx, err := regexp.Compile(title_regex)
     if err != nil {
-      fmt.Println(fmt.Sprintf("Warning: Could not compile: '%s'", regex))
+      fmt.Println(fmt.Sprintf("Warning: Could not compile: '%s'", title_regex))
+      continue
+    }
+
+    // Compile regexp, ignore if fails.
+    if channel_regex == "" {
+      channel_regex = ".*"
+    }
+    fmt.Printf("Compiling: %s and %s\n", title_regex, channel_regex)
+    channel_rx, err := regexp.Compile(channel_regex)
+    if err != nil {
+      fmt.Println(fmt.Sprintf("Warning: Could not compile: '%s'", channel_regex))
       continue
     }
 
     // Append on success.
-    regexes = append(regexes, rx)
+    regexes = append(regexes, []*regexp.Regexp{title_rx, channel_rx})
   }
   return regexes, nil
 }
@@ -144,7 +159,7 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
     }
 
     extra_classes := ""
-    if (is_fav(regexes, title)) {
+    if (is_fav(regexes, title, channel)) {
       extra_classes = "favorite"
       upcoming = append(upcoming, map[string]string{
         "Title": title,
