@@ -64,7 +64,6 @@ func get_regexes(db *sql.DB) ([][]*regexp.Regexp, error) {
     if channel_regex == "" {
       channel_regex = ".*"
     }
-    fmt.Printf("Compiling: %s and %s\n", title_regex, channel_regex)
     channel_rx, err := regexp.Compile(channel_regex)
     if err != nil {
       fmt.Println(fmt.Sprintf("Warning: Could not compile: '%s'", channel_regex))
@@ -86,7 +85,7 @@ func noOpHandler(w http.ResponseWriter, r *http.Request) {
   return
 }
 
-func handler(w http.ResponseWriter, r *http.Request, config map[string]string, db *sql.DB) {
+func handler(w http.ResponseWriter, r *http.Request, config map[string]string, channel_groups map[string][]string, db *sql.DB) {
   err := db.Ping()
   if err != nil {
     internal_error_handler(w, r, err)
@@ -101,6 +100,15 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
     num_events = 3
   }
 
+  chgroup := r.FormValue("chgroup")
+  constraints := ""
+  if (chgroup != "") {
+    // Get string array of channels
+    if channels, ok := channel_groups[chgroup]; ok {
+      constraints = "AND channel IN (" + strings.Join(channels, ",") + ")"
+    }
+  }
+
   rows, err := db.Query(`SELECT start, stop, title, channel, description
                          FROM (
                            SELECT 
@@ -108,7 +116,7 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
                           FROM tvguide
                           WHERE stop::TIMESTAMP WITH TIME ZONE AT TIME ZONE 'GMT' > now() AT TIME ZONE 'GMT'
                         ) as sq
-                        WHERE sq.rank <= $1 ORDER BY channel`, num_events)
+                        WHERE sq.rank <= $1 ` + constraints + ` ORDER BY channel`, num_events)
   if err != nil {
     internal_error_handler(w, r, err)
     return
@@ -183,6 +191,7 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, d
   params["TimeZone"] = tzone
   params["CurrentTime"] = time.Now().In(loc).Format(llayout)
   params["Channels"] = channels
+  params["ChannelGroups"] = channel_groups
   params["Upcoming"] = upcoming
 
   if err := rows.Err(); err != nil {
@@ -224,6 +233,31 @@ func parse_config(filename string) (map[string]string, error) {
   return config, nil
 }
 
+func parse_channel_groups(filename string) (map[string][]string, error) {
+  channel_groups := make(map[string][]string)
+
+  content, err := ioutil.ReadFile(filename)
+  if err != nil {
+    return nil, err
+  }
+
+  lines := strings.Split(string(content), "\n")
+  for _, line := range lines {
+    c := strings.Split(line, "=")
+    if (len(c) > 1) {
+      key := strings.TrimSpace(c[0])
+      channels := strings.Split(c[1], ",")
+      for i, channel := range channels {
+        // Channel name without space and with single quotes around.
+        channels[i] = fmt.Sprintf("'%s'", strings.TrimSpace(channel))
+      }
+      channel_groups[key] = channels
+    }
+  }
+
+  return channel_groups, nil
+}
+
 func get_db_conn(config map[string]string) (*sql.DB, error) {
   connect_string := fmt.Sprintf("dbname=%s user=%s password=%s sslmode=disable",
                                 config["dbName"],
@@ -238,14 +272,25 @@ func get_db_conn(config map[string]string) (*sql.DB, error) {
 
 func main() {
   bin_path, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+
+  // Read config file
   conf_file := bin_path + "/../app.conf"
   if (len(os.Args) > 1) {
     conf_file = os.Args[1]
   }
-
   config, err := parse_config(conf_file)
   if err != nil {
     log.Fatal("Could not parse config: " + err.Error())
+  }
+
+  // Get channel groups
+  chgrp_file := bin_path + "/../channelgroups.conf"
+  if (len(os.Args) > 2) {
+    chgrp_file = os.Args[2]
+  }
+  channel_groups, err := parse_channel_groups(chgrp_file)
+  if err != nil {
+    log.Fatal("Could not parse channel group config: " + err.Error())
   }
 
   conn, err := get_db_conn(config)
@@ -256,7 +301,7 @@ func main() {
   http.HandleFunc("/favicon.ico", noOpHandler)
   http.HandleFunc("/favicon.png", noOpHandler)
   http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-  http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { handler(w, r, config, conn) })
+  http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { handler(w, r, config, channel_groups, conn) })
 
   err = http.ListenAndServe(":12300", nil)
   if err != nil {

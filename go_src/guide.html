@@ -108,6 +108,16 @@
         </td>
       </tr>
       <tr>
+        <td><b>Channel group</b></td>
+        <td>
+          <select name="chgroup">
+            <option value="">-</option>
+          {{ range $grpname, $channels := .ChannelGroups }}
+            <option value="{{ $grpname }}">{{ $grpname }}</option>
+          {{ end }}
+          </select>
+      </tr>
+      <tr>
         <td colspan="2" style="text-align: center"><input type="submit" value="Submit"/></td>
       </tr>
     </table>
