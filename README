@@ -12,6 +12,7 @@ It's live and running in http://tv.schistad.info
     $ export GOPATH=$PWD
     $ go get
     $ go build -o tvguide
+    $ sudo supervisorctl reload tvguide-golang
 
 ## Setup DB
 
