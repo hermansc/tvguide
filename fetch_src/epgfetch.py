@@ -59,11 +59,22 @@ def main(config):
             except Exception as exp:
               print "Got exception fetching %s" % channel_key
               raise(exp)
-            compr = StringIO.StringIO()
-            compr.write(resp.read())
-            compr.seek(0)
-            f = gzip.GzipFile(fileobj=compr, mode='rb')
-            channel_cache[channel_key] = f.read()
+
+            response = ""
+            while 1:
+              data = resp.read()
+              if not data:
+                break
+              response += data
+
+            try:
+              compr = StringIO.StringIO()
+              compr.write(response)
+              compr.seek(0)
+              f = gzip.GzipFile(fileobj=compr, mode='rb')
+              channel_cache[channel_key] = f.read()
+            except IOError as e:
+              channel_cache[channel_key] = response
 
           progs.extend(parse_channel(channel_cache[channel_key], channel, mode=config["fetchModus"]))
           time.sleep(0.05)

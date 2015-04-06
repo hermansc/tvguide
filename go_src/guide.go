@@ -127,11 +127,11 @@ func handler(w http.ResponseWriter, r *http.Request, config map[string]string, c
 
   tzone := r.FormValue("zone")
   if tzone == "" {
-    tzone = "GMT"
+    tzone = "Europe/London"
   }
   loc, err := time.LoadLocation(tzone)
   if err != nil {
-    loc, _ = time.LoadLocation("GMT")
+    loc, _ = time.LoadLocation("Europe/London")
   }
 
   // Get regexes to check titles for favorites
